@@ -3,6 +3,8 @@ import ipaddress
 
 from concurrent.futures import ThreadPoolExecutor
 from tqdm import tqdm
+from rich.console import Console
+from rich.table import Table
 
 class NetworkAnalyzer:
     def __init__(self, network_range, timeout=1):
@@ -18,7 +20,7 @@ class NetworkAnalyzer:
         except (socket.timeout, socket.error):
             return (ip, False)
 
-    def hosts_scan(self, port):
+    def hosts_scan(self, port=1000):
         network = ipaddress.ip_network(self.network_range, strict=False)
         hosts_up = []
         with ThreadPoolExecutor(max_workers=100) as executor:
@@ -28,3 +30,13 @@ class NetworkAnalyzer:
                     hosts_up.append(future.result()[0])
 
         return hosts_up
+
+    def pretty_print(self, data, data_type='hosts'):
+        console = Console()
+        table = Table(show_header=True, header_style='bold magenta')
+
+        if data_type == 'hosts':
+            table.add_column('Host Up', style='bold green')
+            for host in data:
+                table.add_row(host, end_section=True)
+        console.print(table)
