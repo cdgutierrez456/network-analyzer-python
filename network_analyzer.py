@@ -5,9 +5,9 @@ from concurrent.futures import ThreadPoolExecutor
 from tqdm import tqdm
 from rich.console import Console
 from rich.table import Table
-# from scapy.all import *
 from scapy.layers.inet import IP, TCP
-from scapy.sendrecv import sr
+from scapy.layers.l2 import Ether, ARP
+from scapy.sendrecv import sr, srp
 import logging
 
 # Desactivamos la salida de warnings para Scapy
@@ -34,6 +34,15 @@ class NetworkAnalyzer:
             if response:
                 return (ip, True)
         return (ip, False)
+
+    def hosts_scan_arp(self):
+        hosts_up = []
+        network = ipaddress.ip_network(self.network_range, strict=False)
+        arp_request = Ether(dst='ff:ff:ff:ff:ff:ff') / ARP(pdst=str(network))
+        response, _ = tqdm(srp(arp_request, timeout=self.timeout, iface_hint=str(network[1]), verbose=0), desc='Escaneando con ERP')
+        for _, received in response:
+            hosts_up.append(received.psrc)
+        return hosts_up
 
     def hosts_scan(self, scan_ports=(135, 445, 139)):
         network = ipaddress.ip_network(self.network_range, strict=False)
